@@ -114,6 +114,9 @@ server.post('/oauth2callback', async (req, res) => {
         console.log("??????????")
         console.log(oauth2Client.credentials); 
         console.log("??????????")
+        console.log("????????????")
+        console.log(signInResult)
+        console.log("????????????")
         // Do something with the sign-in result
         // res.json({
         //   accessToken : oauth2Client.credentials.access_token
@@ -127,11 +130,10 @@ server.post('/oauth2callback', async (req, res) => {
         // };
         // searchVideos(oauth2Client, query, filter);
         if(signInResult.success){
-          const token = signInResult.jwttoken
+          const token = signInResult.jwttoken || signInResult.token
           const message = signInResult.success
           console.log(":::::::::::::::::::")
           console.log(signInResult)
-          console.log(token, message)
           console.log(":::::::::::::::::::")
           console.log("111111111111111")
           res.status(200).json({ message, token});

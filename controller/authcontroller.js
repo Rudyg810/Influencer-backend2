@@ -89,7 +89,9 @@ auth.getAllRoleOneUsers = async (req, res) => {
 
 auth.googleSignIn = async (token, useremail) => {
     try {
-      console.log(useremail)
+      console.log("::::::::::::::::::::::::::::::::")
+      console.log(token,useremail)
+      console.log("::::::::::::::::::::::::::::::::")
       if (!useremail) {
         const { name, email, photo } = await getUserInfo(token);
   
@@ -184,7 +186,9 @@ auth.googleSignIn = async (token, useremail) => {
           return { jwttoken2, success: true };
         }
       } else {
-        let existingUser = await User.findOne({ email: useremail });
+        console.log("*******************************", useremail)
+       existingUser = await User.findOne({ email: useremail });
+      console.log(existingUser)
         if (existingUser) {
           existingUser.googleId = {
             access_token: token.access_token,
@@ -193,7 +197,12 @@ auth.googleSignIn = async (token, useremail) => {
             id_token: token.id_token,
             expiry_date: token.expiry_date
           };
+          console.log("&&&&&&&&&&&&&&&&&&&&&&&&&&")
+
           await existingUser.save();
+          console.log(">>>>>>>>>>>>>>>>>>>>>")
+          console.log(existingUser)
+          console.log(">>>>>>>>>>>>>>>>>>>>>")
           if (!existingUser.verfied) {
             console.log("Not verified");
             const jwttoken = jwt.sign(
