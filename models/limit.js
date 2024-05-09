@@ -10,7 +10,8 @@ const limitSchema = new mongoose.Schema({
         ask: {
             type: Number,
             default: 0,
-            required: true
+            required: true                                                           
+            //ekfogj bv
         },
         revision: {
             type: Number,
