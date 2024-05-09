@@ -1,4 +1,4 @@
-const config = require("../../../config");
+const config = require("../config");
 const Update = require("../models/update");
 const User = require("../models/usermodel");
 const AWS = require("aws-sdk");

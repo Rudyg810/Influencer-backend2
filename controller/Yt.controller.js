@@ -1,5 +1,5 @@
 var {google} = require('googleapis');
-const config = require('../../../config');
+const config = require('../config');
 const youtube = google.youtube('v3');
 var OAuth2 = google.auth.OAuth2;
 const request = require('request');

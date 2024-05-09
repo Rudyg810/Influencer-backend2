@@ -20,7 +20,7 @@ const {searchVideos, revokeAccessToken, postVideo} = require("./controller/Yt.co
 // Define routes
 const server = express();
 const thumbnailController = require('./controller/thumbnailcontroller');
-const config = require("../../config");
+const config = require("./config");
 const { default: axios } = require('axios');
 const { uploadTweet, getUserInfo_X } = require('./controller/X.controller');
 const path = require('path');
