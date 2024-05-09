@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const thumbnailSchema = new mongoose.Schema({
     Images: [{
-        type: String, // Assuming the image path or URL
+        type: Buffer, // Assuming the image path or URL
         required: true
     }],
     user: {

