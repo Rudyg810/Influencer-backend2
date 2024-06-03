@@ -25,10 +25,10 @@ const { default: axios } = require('axios');
 const { uploadTweet, getUserInfo_X } = require('./controller/X.controller');
 const path = require('path');
 const updateController = require('./controller/Update.controller');
-server.use(bodyParser.json({ limit: '50mb' })); // Adjust the limit as per your requirement
+// Adjust the limit as per your requirement
 require('aws-sdk/lib/maintenance_mode_message').suppress = true; //for removing warnings in the mail received
 server.use(cors());
-
+server.use(bodyParser.json({ limit: '50mb' })); 
 server.use(morgan("dev"));
 const youtube = google.youtube('v3');
 
@@ -94,7 +94,7 @@ server.post('/api/token', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-server.post('/v3/search', async (req, res) => {
+server.post('/api/v3/search', async (req, res) => {
   try {
     const { token, query, filter } = req.body;
     var oauth2Client = new OAuth2(config.googleClientId, config.googleClientSecret, config.redirectURI);
@@ -108,7 +108,7 @@ server.post('/v3/search', async (req, res) => {
   }
 });
 
-server.post('/oauth2callback', async (req, res) => {
+server.post('/api/oauth2callback', async (req, res) => {
   try {
     var oauth2Client = new OAuth2(config.googleClientId, config.googleClientSecret, config.redirectURI);
     var code = req.body.code;
@@ -164,7 +164,7 @@ server.post('/oauth2callback', async (req, res) => {
 });
 
 
-server.post('/v3/uploadVideo', async (req, res) => {
+server.post('/api/v3/uploadVideo', async (req, res) => {
   console.log("???????????")
   console.log(req.body)
   console.log("???????????")
@@ -190,7 +190,7 @@ server.post('/v3/uploadVideo', async (req, res) => {
   }
 });
 
-server.post('/google-setup/:key', (req, res) => {
+server.post('/api/google-setup/:key', (req, res) => {
   const { key } = req.params;
 
 
@@ -222,7 +222,7 @@ server.post('/google-setup/:key', (req, res) => {
   }
 });
 
-server.post('/revokeAccessToken', (req, res) => {
+server.post('api/revokeAccessToken', (req, res) => {
   const accessToken = req.body.accessToken;
   revokeAccessToken(accessToken, (error) => {
     if (error) {
@@ -235,7 +235,7 @@ server.post('/revokeAccessToken', (req, res) => {
 });
 
 
-server.post("/upload-tweet", (req, res) => {
+server.post("/api/upload-tweet", (req, res) => {
   const { accessToken, description } = req.body;
 
   uploadTweet(description, accessToken)
@@ -260,7 +260,7 @@ server.post("/upload-tweet", (req, res) => {
 
 
 // Construct authorization URL
-server.get('/twitter-auth', (req, res) => {
+server.get('/api/twitter-auth', (req, res) => {
 const scope = 'users.read  tweet.read offline.access tweet.write';
 const authorizationEndpoint = 'https://twitter.com/i/oauth2/authorize';
 const responseType = 'code'; // Response type for authorization code flow
@@ -282,7 +282,7 @@ const authUrl = `${authorizationEndpoint}?${querystring.stringify(params)}`;
 res.json({ authUrl });
 });
 
-server.post("/sendmail",async(req,res)=>{
+server.post("/api/sendmail",async(req,res)=>{
   const options = {
     method: 'POST',
     url: 'https://mail-sender-api1.p.rapidapi.com/',
@@ -310,7 +310,7 @@ server.post("/sendmail",async(req,res)=>{
   }
 })
 
-server.post('/oauth2_x_callback', async(req, res) => {
+server.post('/api/oauth2_x_callback', async(req, res) => {
   const clientId = config.X_CLIENT_TOKEN;
   const clientSecret = config.X_CLIENT_SECRET;
   const {code} = req.body
@@ -397,8 +397,11 @@ server.post('/oauth2_x_callback', async(req, res) => {
     .catch(error => {
       console.error(error);
     });
-})
+});
+
+
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log("Server listening on port " + PORT);
 });
+
